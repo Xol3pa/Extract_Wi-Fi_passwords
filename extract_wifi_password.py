@@ -1,0 +1,32 @@
+import subprocess
+
+
+def extract_wifi_passwords():
+    """Extracting Windows Wi-Fi passwords into .txt file"""
+
+    profiles_data = subprocess.check_output('netsh wlan show profiles').decode('CP866').split('\n')
+    profiles = [i.split(':')[1].strip() for i in profiles_data if 'Все профили пользователей' in i]
+
+    for profile in profiles:
+        try:
+            profile_info = subprocess.check_output(f'netsh wlan show profile {profile} key=clear').decode('CP866').split('\n')
+        except subprocess.CalledProcessError:
+            del profiles[profiles.index(profile)]
+            continue
+
+
+        try:
+            password = [i.split(':')[1].strip() for i in profile_info if 'Содержимое ключа' in i][0]
+        except IndexError:
+            password = None
+
+        with open(file='wifi_passwords.txt', mode='a', encoding='Windows-1251') as file:
+            file.write(f'Profile: {profile}\nPassword: {password}\n{"#" * 20}\n')
+
+
+def main():
+    extract_wifi_passwords()
+
+
+if __name__ == '__main__':
+    main()
